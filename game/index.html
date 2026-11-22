@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>BRANKAS EMAS — Midnight Vault Heist</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body { margin: 0; background: #05070f; }
+  body { display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+  canvas { width: 1280px; height: 800px; max-width: 100vw; max-height: 100vh; display: block; }
+</style>
+</head>
+<body>
+<canvas id="game" width="1280" height="800"></canvas>
+<script type="module">
+import { boot, stepGame } from './src/main.js';
+import { draw } from './src/render.js';
+import { stageShot } from './src/shots.js';
+import { attachInput, createInput } from './src/input.js';
+
+const canvas = document.getElementById('game');
+const { state, playSfx } = boot(canvas);
+const input = createInput();
+attachInput(input, canvas);
+
+const params = new URLSearchParams(location.search);
+const shot = params.get('shot');
+if (shot) {
+  stageShot(state, shot);
+  draw(canvas.getContext('2d'), state);
+  window.__shotReady = true;
+  window.__brankas = { state };
+} else {
+  const ctx = canvas.getContext('2d');
+  let last = performance.now();
+  window.__brankas = { state, input };
+  const frame = (now) => {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    stepGame(state, input, dt);
+    for (const name of state.sfx.splice(0)) playSfx(name);
+    draw(ctx, state);
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>
